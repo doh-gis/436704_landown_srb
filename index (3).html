@@ -1,0 +1,1096 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>กรรมสิทธิ์ นามศัพท์</title>
+<style>
+/* ซ่อนหน้าเลือกสีผังเมืองเดิม */
+main {
+    display: none !important;
+}
+/* ---------- หน้าหลัก (ตัวแปรสีที่ map.css ใช้) ---------- */
+:root{--bg:#f3f5f9;--card:#ffffff;--tx:#1b2333;--bd:#d9deea;--ac:#2563eb}
+@media (prefers-color-scheme:dark){
+  :root{--bg:#0f1524;--card:#1a2236;--tx:#e8ecf5;--bd:#2c3752;--ac:#7aa7ff}
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font-family:"Sarabun","Noto Sans Thai",system-ui,sans-serif;line-height:1.5}
+main{max-width:720px;margin:0 auto;padding:20px 16px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:16px}
+.row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
+.row h2{margin:0;font-size:1rem}
+#zones{display:flex;flex-wrap:wrap;gap:8px}
+#zones button{padding:6px 14px;border:1px solid var(--bd);border-radius:99px;background:var(--bg);color:var(--tx);cursor:pointer;font:inherit}
+#zones button.on{background:var(--ac);border-color:var(--ac);color:#fff;font-weight:700}
+#picked{margin:12px 0 0;font-size:.9rem}
+
+/* ================= map.css ================= */
+/* ปุ่มเปิดแผนที่ (อยู่แถวเดียวกับหัวข้อสีผังเมือง) */
+.mapbtn{margin:0;padding:0;border:0;background:none;color:var(--ac);cursor:pointer;font:inherit;font-size:.8rem;font-weight:700;white-space:nowrap}
+.mapbtn:hover{text-decoration:underline}
+
+/* popup ลอยทับหน้าหลัก */
+.mm-back{position:fixed;inset:0;z-index:10000;background:rgba(10,15,30,.55);display:flex;align-items:center;justify-content:center;padding:0}
+.mm-back.hide{display:none}
+.mm-back.full{padding:0}
+.mm-back.full .mm-box{width:100%;height:100%;border-radius:0;border:0}
+.mm-box{
+    width:100%;
+    height:100%;
+    max-width:none;
+    border-radius:0;
+    border:0;background:var(--card);color:var(--tx);border:1px solid var(--bd);border-radius:14px;box-shadow:0 10px 40px rgba(0,0,0,.35);display:flex;flex-direction:column;overflow:hidden}
+.mm-fs {
+    display: none !important;
+}
+.mm-warn{margin:0;padding:6px 14px;font-size:.8rem;color:#ff6b6b;border-top:1px solid var(--bd)}
+.mm-map {
+    flex: 1;
+    min-height: 0;
+    isolation: isolate;
+
+    /* ให้ Leaflet รับการสัมผัสจากนิ้วโดยตรง */
+    touch-action: none !important;
+    -webkit-user-select: none;
+    user-select: none;
+}
+.mm-map.leaflet-container {
+    touch-action: none !important;
+}
+.mm-picker{background:#fff;padding:4px;max-width:200px}
+.mm-picker input{font-size:.75rem;width:100%;color:#1b2333}
+.mm-pop .mm-img{margin:0 0 8px}
+.mm-pop .mm-img button{padding:5px 12px;border:1px solid #2563eb;border-radius:99px;background:#e8efff;color:#1b2333;cursor:pointer;font:inherit;font-weight:700}
+.mm-pop .mm-img img{width:100%;max-height:220px;object-fit:contain;display:block;margin-top:6px;border:1px solid #e2e6ee;border-radius:6px;background:#f8fafc}
+.mm-pop .mm-img img{cursor:zoom-in}
+.mm-pop .mm-img .mm-cap{display:block;margin-top:3px;font-size:.7rem;color:#6a7489}
+.mm-lb{position:fixed;inset:0;z-index:10001;box-sizing:border-box;display:flex;overflow:auto;overscroll-behavior:contain;padding:12px;background:rgba(10,15,30,.88);cursor:zoom-out;touch-action:pan-x pan-y}
+.mm-lb img{margin:auto;display:block;max-width:none;max-height:none;object-fit:contain;background:#fff;border-radius:6px;box-shadow:0 8px 40px rgba(0,0,0,.5);cursor:grab;touch-action:none;flex:none}
+.mm-lb.zoom img{cursor:grab}
+.mm-lb .mm-lbx{position:fixed;top:12px;right:12px;z-index:1;width:40px;height:40px;border:0;border-radius:50%;background:rgba(255,255,255,.92);color:#1b2333;font-size:1.2rem;cursor:pointer}
+.mm-lb .mm-lbh{position:fixed;left:50%;bottom:10px;transform:translateX(-50%);padding:3px 12px;border-radius:99px;background:rgba(0,0,0,.55);color:#fff;font-size:.75rem;white-space:nowrap;pointer-events:none}
+.mm-lb .mm-zoom-controls{position:fixed;left:12px;top:12px;z-index:2;display:flex;gap:6px}
+.mm-lb .mm-zoom-controls button{min-width:40px;height:40px;padding:0 10px;border:0;border-radius:20px;background:rgba(255,255,255,.94);color:#1b2333;font-size:1rem;font-weight:700;box-shadow:0 2px 8px rgba(0,0,0,.25)}
+
+.mm-legend{background:#fff;color:#1b2333;padding:6px 10px;border-radius:6px;font-size:.75rem;line-height:1.6;max-height:40vh;max-width:260px;overflow:auto;box-shadow:0 1px 5px rgba(0,0,0,.3)}
+.mm-legend b{display:block;margin-bottom:2px}
+.mm-legend i{display:inline-block;width:12px;height:12px;margin-right:6px;border:1px solid #1b2333;vertical-align:-1px}
+.mm-legend-toggle{display:none}
+@media (max-width:600px){
+  .mm-legend{max-width:125px;max-height:18vh;padding:3px 5px;font-size:.56rem;line-height:1.25;border-radius:7px}
+  .mm-legend-toggle{display:block;width:100%;padding:2px 1px;border:0;background:transparent;color:#1b2333;text-align:left;font:inherit;font-size:.62rem;font-weight:700;cursor:pointer}
+  .mm-legend-items{display:none;padding-top:3px}
+  .mm-legend.open .mm-legend-items{display:block}
+  .mm-legend b{margin:2px 0}
+  .mm-legend i{width:9px;height:9px;margin-right:4px}
+}
+.mm-picker small{display:block;font-size:.72rem;color:#1b2333;padding:0 2px 3px}
+
+/* label ของ feature (PL_BLOCK) */
+.leaflet-tooltip.mm-lbl{background:none;border:0;box-shadow:none;padding:0;color:#000;font-weight:700;font-size:.72rem;white-space:nowrap;text-shadow:0 0 3px #fff,0 0 3px #fff,0 0 2px #fff}
+.leaflet-tooltip.mm-lbl:before{display:none}
+.mm-map:not(.mm-showlbl) .mm-lbl{display:none}
+
+/* เครื่องมือค้นหา lat,long */
+.mm-search{display:flex;background:#fff;padding:3px;gap:3px;align-items:center}
+.mm-search .bd{display:flex;flex-direction:column;gap:3px;align-items:stretch}
+.mm-search .ins{display:flex;gap:3px;align-items:center}
+.mm-search .btns{display:flex;gap:3px;justify-content:center;align-items:center}
+.mm-search.col .bd{display:none}
+.mm-search.col{padding:0}
+.mm-search .tg{background:#fff;width:auto;min-width:30px;padding:0 8px;white-space:nowrap}
+.mm-search.one .la,.mm-search.one .lo{display:none}
+.mm-search:not(.one) .ll{display:none}
+.mm-search .ll{width:170px}
+.mm-search .sw{background:#f1f5f9}
+.mm-search input{width:90px;padding:5px 7px;border:1px solid #cfd5e1;border-radius:6px;font-size:.8rem;color:#1b2333;background:#fff}
+.mm-search input.err{border-color:#dc2626;outline:2px solid #dc2626}
+.mm-search button{width:30px;height:30px;border:0;border-radius:6px;background:#e8efff;color:#1b2333;cursor:pointer;font-size:.9rem}
+.mm-search button.clr{background:#fee2e2;width:auto;padding:0 10px;white-space:nowrap;font-size:.8rem}
+
+/* ปุ่มตำแหน่งปัจจุบัน (ใต้ปุ่มซูมออก) */
+.leaflet-bar a.mm-loc{font-size:1rem;text-decoration:none;color:#1b2333;text-align:center}
+.leaflet-bar a.mm-loc.busy{opacity:.4;pointer-events:none}
+.leaflet-bar a.mm-loc.tracking{background:#dbeafe;color:#1d4ed8;border:2px solid #2563eb}
+
+/* popup ของ feature: กว้าง 260 สูง 350 คงที่ */
+
+/* Popup ปรับขนาดตามเนื้อหา */
+.mm-pop .leaflet-popup-content{
+  width:max-content !important;
+  max-width:min(360px, calc(100vw - 60px));
+  height:auto !important;
+  max-height:70vh;
+  margin:10px 12px;
+  overflow:auto;
+  font-family:inherit;
+  font-size:.85rem;
+}
+
+/* ตารางข้อมูล */
+.mm-pop table{
+  width:100%;
+  border-collapse:collapse;
+  font-size:.8rem;
+  table-layout:auto;
+}
+
+/* ข้อความในตาราง */
+.mm-pop td{
+  padding:3px 6px;
+  border-bottom:1px solid #e2e6ee;
+  text-align:left;
+  vertical-align:top;
+}
+
+/* ชื่อหัวข้อด้านซ้าย */
+.mm-pop td:first-child{
+  color:#6a7489;
+  font-weight:600;
+  white-space:nowrap;
+}
+
+/* ค่าข้อมูลด้านขวา: ไม่ตัดเป็นหลายบรรทัด */
+/* .mm-pop td:last-child{
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  max-width:260px;
+} */
+.mm-pop .mm-pick{margin:0 0 8px}
+.mm-pop .mm-pick small{display:block;margin-bottom:4px;color:#6a7489}
+.mm-pop .mm-pick button{display:inline-flex;align-items:center;gap:7px;padding:5px 14px 5px 10px;border:2px solid var(--zc);background:var(--zc);color:var(--zt);border-radius:99px;cursor:pointer;font:inherit;font-weight:700}
+.mm-pop .mm-pick button i{width:12px;height:12px;border-radius:50%;background:var(--zt)}
+.mm-pop .mm-none{margin:0 0 8px;font-size:.78rem;color:#dc2626}
+</style>
+</head>
+<body>
+<main>
+  <div class="card">
+    <div class="row">
+      <h2>สีผังเมือง</h2>
+      <button type="button" id="mapBtn" class="mapbtn">🗺️ เลือกจากแผนที่</button>
+    </div>
+    <div id="zones">
+      <button type="button">ก.1</button><button type="button">ก.2</button><button type="button">ก.3</button>
+      <button type="button">ย.1</button><button type="button">ย.2</button>
+      <button type="button">พ.1</button><button type="button">พ.2</button>
+      <button type="button">อ.1</button><button type="button">อ.2</button>
+      <button type="button">ล.</button><button type="button">ศน.</button><button type="button">ศษ.</button>
+      <button type="button">ส.</button><button type="button">อศ.</button><button type="button">อป.</button>
+    </div>
+    <p id="picked">โซนที่เลือก: -</p>
+  </div>
+</main>
+
+<script>
+/* เลือกโซน: ตั้ง class="on" (map.js เรียก zb.click() เมื่อกดเลือกจากแผนที่) */
+(function(){
+  var z=document.getElementById("zones"),out=document.getElementById("picked");
+  z.addEventListener("click",function(e){
+    var b=e.target.closest("button");if(!b)return;
+    z.querySelectorAll("button").forEach(function(x){x.classList.remove("on")});
+    b.classList.add("on");
+    out.textContent="โซนที่เลือก: "+b.textContent;
+  });
+})();
+</script>
+
+<!-- ตั้งค่าชื่อฟิลด์จาก alias.xlsx ที่แนบมา (ฝังไว้ใน HTML เพื่อไม่ต้องโหลดแยก) -->
+<script>
+
+/* โหลดชื่อฟิลด์จาก alias.csv */
+window.FIELD_CONFIG = {};
+
+window.FIELD_CONFIG_READY = fetch("alias.csv")
+  .then(response => {
+    if (!response.ok) {
+      throw new Error("ไม่พบไฟล์ alias.csv");
+    }
+    return response.arrayBuffer();
+  })
+  .then(buffer => {
+    // รองรับภาษาไทย TIS-620 / Windows-874
+    const csvText = new TextDecoder("windows-874").decode(buffer);
+
+    // อ่าน CSV รองรับข้อความที่มีเครื่องหมายคำพูด
+    function parseCSV(text) {
+      const rows = [];
+      let row = [];
+      let value = "";
+      let quoted = false;
+
+      for (let i = 0; i < text.length; i++) {
+        const c = text[i];
+
+        if (c === '"') {
+          if (quoted && text[i + 1] === '"') {
+            value += '"';
+            i++;
+          } else {
+            quoted = !quoted;
+          }
+        } else if (c === "," && !quoted) {
+          row.push(value.trim());
+          value = "";
+        } else if ((c === "\n" || c === "\r") && !quoted) {
+          if (c === "\r" && text[i + 1] === "\n") i++;
+          row.push(value.trim());
+
+          if (row.some(v => v !== "")) rows.push(row);
+
+          row = [];
+          value = "";
+        } else {
+          value += c;
+        }
+      }
+
+      if (value !== "" || row.length) {
+        row.push(value.trim());
+        rows.push(row);
+      }
+
+      return rows;
+    }
+
+    const rows = parseCSV(csvText);
+    const headers = rows.shift().map(v => v.replace(/^\uFEFF/, "").trim());
+
+    const layerIndex = headers.indexOf("layer");
+    const fieldIndex = headers.indexOf("field");
+    const aliasIndex = headers.indexOf("ชื่อที่แสดง");
+    const showIndex = headers.indexOf("show");
+
+    if ([layerIndex, fieldIndex, aliasIndex, showIndex].includes(-1)) {
+      throw new Error("หัวคอลัมน์ใน alias.csv ไม่ถูกต้อง");
+    }
+
+    rows.forEach(row => {
+      const layer = row[layerIndex];
+      const field = row[fieldIndex];
+
+      if (!layer || !field) return;
+
+      if (!window.FIELD_CONFIG[layer]) {
+        window.FIELD_CONFIG[layer] = [];
+      }
+
+      window.FIELD_CONFIG[layer].push({
+        f: field,
+        l: row[aliasIndex] || "",
+        s: Number(row[showIndex]) === 1 ? 1 : 0
+      });
+    });
+
+    console.log("โหลด alias.csv สำเร็จ", window.FIELD_CONFIG);
+  })
+  .catch(error => {
+    console.warn("ไม่สามารถโหลด alias.csv ได้ ใช้การตั้งค่าเริ่มต้นแทน:", error);
+    window.FIELD_CONFIG = {};
+  });
+
+</script>
+
+<script>
+// ใช้ FIELD_CONFIG ที่โหลดจาก alias.xlsx เท่านั้น ไม่กำหนดค่าซ้ำทับ Excel
+
+</script>   <!-- ตั้งค่าฟิลด์ที่แสดงใน popup สร้างโดย build_fields.py จาก fields.xlsx (ไม่มีไฟล์นี้ก็ได้ = แสดงทุกฟิลด์) -->
+<script>
+</script>   <!-- ตารางจับคู่รูป สร้างโดย match_images.py (ไม่มีไฟล์นี้ก็ได้) -->
+<script>
+window.LANDOWN_IMAGE_MAP={"7|68":["ที่สาธารณประโยชน์/7.68.jpg"],"7|60":["ที่สาธารณประโยชน์/7.60.jpg"],"7|48":["ที่สาธารณประโยชน์/7.48.jpg"],"7|38":["ที่สาธารณประโยชน์/7.38.jpg"],"7|29":["ที่สาธารณประโยชน์/7.29.jpg"],"7|25":["ที่สาธารณประโยชน์/7.25.jpg"],"7|23":["ที่สาธารณประโยชน์/7.23.jpg"],"7|3":["ที่สาธารณประโยชน์/7.3.jpg"],"7|37":["ที่สาธารณประโยชน์/7.37.jpg"],"7|70":["ที่สาธารณประโยชน์/7.70.jpg"],"7|69":["ที่สาธารณประโยชน์/7.69.jpg"],"7|67":["ที่สาธารณประโยชน์/7.67.jpg"],"7|41":["ที่สาธารณประโยชน์/7.41.jpg"],"7|22":["ที่สาธารณประโยชน์/7.22.jpg"],"7|21":["ที่สาธารณประโยชน์/7.21.jpg"],"7|20":["ที่สาธารณประโยชน์/7.20.jpg"],"7|14":["ที่สาธารณประโยชน์/7.14.jpg"],"7|15":["ที่สาธารณประโยชน์/7.15.jpg"],"7|16":["ที่สาธารณประโยชน์/7.16.jpg"],"7|56":["ที่สาธารณประโยชน์/7.56.jpg"],"7|61":["ที่สาธารณประโยชน์/7.61.jpg"],"7|49":["ที่สาธารณประโยชน์/7.49.jpg"],"7|51":["ที่สาธารณประโยชน์/7.51.jpg"],"7|50":["ที่สาธารณประโยชน์/7.50.jpg"],"7|62":["ที่สาธารณประโยชน์/7.62.jpg"],"7|43":["ที่สาธารณประโยชน์/7.43.jpg"],"7|19":["ที่สาธารณประโยชน์/7.19.jpg"],"7|10":["ที่สาธารณประโยชน์/7.10.jpg"],"7|12":["ที่สาธารณประโยชน์/7.12.jpg"],"7|9":["ที่สาธารณประโยชน์/7.9.jpg"],"7|65":["ที่สาธารณประโยชน์/7.65.jpg"],"7|13":["ที่สาธารณประโยชน์/7.13.jpg"],"7|8":["ที่สาธารณประโยชน์/7.8.jpg"],"7|47":["ที่สาธารณประโยชน์/7.47.jpg"],"7|45":["ที่สาธารณประโยชน์/7.45.jpg"],"7|46":["ที่สาธารณประโยชน์/7.46.jpg"],"7|7":["ที่สาธารณประโยชน์/7.7.jpg"],"7|1":["ที่สาธารณประโยชน์/7.1.jpg"],"7|33":["ที่สาธารณประโยชน์/7.33.jpg"],"7|32":["ที่สาธารณประโยชน์/7.32.jpg"],"7|71":["ที่สาธารณประโยชน์/7.71.jpg"],"7|35":["ที่สาธารณประโยชน์/7.35.jpg"],"7|2":["ที่สาธารณประโยชน์/7.2.jpg"],"7|36":["ที่สาธารณประโยชน์/7.36.jpg"],"7|63":["ที่สาธารณประโยชน์/7.63.jpg"],"7|52":["ที่สาธารณประโยชน์/7.52.jpg"],"7|44":["ที่สาธารณประโยชน์/7.44.jpg"],"7|59":["ที่สาธารณประโยชน์/7.59.jpg"],"7|42":["ที่สาธารณประโยชน์/7.42.jpg"],"7|54":["ที่สาธารณประโยชน์/7.54.jpg"],"7|64":["ที่สาธารณประโยชน์/7.64.jpg"],"7|28":["ที่สาธารณประโยชน์/7.28.jpg"],"7|34":["ที่สาธารณประโยชน์/7.34.jpg"],"7|26":["ที่สาธารณประโยชน์/7.26.jpg"],"7|11":["ที่สาธารณประโยชน์/7.11.jpg"],"7|40":["ที่สาธารณประโยชน์/7.40.jpg"],"7|39":["ที่สาธารณประโยชน์/7.39.jpg"],"7|53":["ที่สาธารณประโยชน์/7.53.jpg"],"7|18":["ที่สาธารณประโยชน์/7.18.jpg"],"7|5":["ที่สาธารณประโยชน์/7.5.jpg"],"7|4":["ที่สาธารณประโยชน์/7.4.jpg"],"7|6":["ที่สาธารณประโยชน์/7.6.jpg"],"7|72":["ที่สาธารณประโยชน์/7.72.jpg"],"7|55":["ที่สาธารณประโยชน์/7.55.jpg"],"7|57":["ที่สาธารณประโยชน์/7.57.jpg"],"7|58":["ที่สาธารณประโยชน์/7.58.jpg"],"7|17":["ที่สาธารณประโยชน์/7.17.jpg"],"7|66":["ที่สาธารณประโยชน์/7.66.jpg"],"7|30":["ที่สาธารณประโยชน์/7.30.jpg"],"7|24":["ที่สาธารณประโยชน์/7.24.jpg"],"7|31":["ที่สาธารณประโยชน์/7.31.jpg"],"7|27":["ที่สาธารณประโยชน์/7.27.jpg"],"13|3":["ที่การรถไฟ/13.jpg"],"13|1":["ที่การรถไฟ/13.jpg"],"14|3":["แนวเขตปฏิรูปที่ดิน/14.3-1.jpg","แนวเขตปฏิรูปที่ดิน/14.3-2.jpg","แนวเขตปฏิรูปที่ดิน/14.3-3.jpg","แนวเขตปฏิรูปที่ดิน/14.3-4.jpg","แนวเขตปฏิรูปที่ดิน/14.3-5.jpg","แนวเขตปฏิรูปที่ดิน/14.3-6.jpg"],"14|2":["แนวเขตปฏิรูปที่ดิน/14.2-1.jpg","แนวเขตปฏิรูปที่ดิน/14.2-2.jpg","แนวเขตปฏิรูปที่ดิน/14.2-3.jpg","แนวเขตปฏิรูปที่ดิน/14.2-4.jpg","แนวเขตปฏิรูปที่ดิน/14.2-5.jpg","แนวเขตปฏิรูปที่ดิน/14.2-6.jpg","แนวเขตปฏิรูปที่ดิน/14.2-7.jpg","แนวเขตปฏิรูปที่ดิน/14.2-8.jpg"],"14|1":["แนวเขตปฏิรูปที่ดิน/14.1.jpg"],"16|1":["แนวเขตป่าสงวนแห่งชาติ อุทยานแห่งชาติและวนอุทยานแห่งชาติ/16.1.jpg"],"16|4":["แนวเขตป่าสงวนแห่งชาติ อุทยานแห่งชาติและวนอุทยานแห่งชาติ/16.4.jpg"],"16|3":["แนวเขตป่าสงวนแห่งชาติ อุทยานแห่งชาติและวนอุทยานแห่งชาติ/16.3.jpg"],"16|2":["แนวเขตป่าสงวนแห่งชาติ อุทยานแห่งชาติและวนอุทยานแห่งชาติ/16.2-1.jpg","แนวเขตป่าสงวนแห่งชาติ อุทยานแห่งชาติและวนอุทยานแห่งชาติ/16.2-2.jpg"],"18|6":["ที่อื่น ๆ/18.6.jpg"],"18|1":["ที่อื่น ๆ/18.1.jpg"],"18|2":["ที่อื่น ๆ/18.2.jpg"],"18|4":["ที่อื่น ๆ/18.4-1.jpg","ที่อื่น ๆ/18.4-2.jpg","ที่อื่น ๆ/18.4-3.jpg"],"18|5":["ที่อื่น ๆ/18.5.jpg"],"18|3":["ที่อื่น ๆ/18.3.jpg"],"1|53":["ที่ราชพัสดุ/1.53.jpg"],"1|56":["ที่ราชพัสดุ/1.56.jpg"],"1|63":["ที่ราชพัสดุ/1.63.jpg"],"1|44":["ที่ราชพัสดุ/1.44.jpg"],"1|58":["ที่ราชพัสดุ/1.58.jpg"],"1|51":["ที่ราชพัสดุ/1.51.jpg"],"1|50":["ที่ราชพัสดุ/1.50.jpg"],"1|52":["ที่ราชพัสดุ/1.52.jpg"],"1|36":["ที่ราชพัสดุ/1.36.jpg"],"1|76":["ที่ราชพัสดุ/1.76.jpg"],"1|47":["ที่ราชพัสดุ/1.47.jpg"],"1|87":["ที่ราชพัสดุ/1.87.jpg"],"1|93":["ที่ราชพัสดุ/1.93.jpg"],"1|24":["ที่ราชพัสดุ/1.24.jpg"],"1|20":["ที่ราชพัสดุ/1.20.jpg"],"1|39":["ที่ราชพัสดุ/1.39.jpg"],"1|11":["ที่ราชพัสดุ/1.11.jpg"],"1|94":["ที่ราชพัสดุ/1.94.jpg"],"1|80":["ที่ราชพัสดุ/1.80.jpg"],"1|35":["ที่ราชพัสดุ/1.35.jpg"],"1|69":["ที่ราชพัสดุ/1.69.jpg"],"1|26":["ที่ราชพัสดุ/1.26.jpg"],"1|91":["ที่ราชพัสดุ/1.91.jpg"],"1|90":["ที่ราชพัสดุ/1.90.jpg"],"1|17":["ที่ราชพัสดุ/1.17.jpg"],"1|42":["ที่ราชพัสดุ/1.42.jpg"],"1|16":["ที่ราชพัสดุ/1.16.jpg"],"1|66":["ที่ราชพัสดุ/1.66.jpg"],"1|65":["ที่ราชพัสดุ/1.65.jpg"],"1|64":["ที่ราชพัสดุ/1.64.jpg"],"1|84":["ที่ราชพัสดุ/1.84.jpg"],"1|32":["ที่ราชพัสดุ/1.32.jpg"],"1|27":["ที่ราชพัสดุ/1.27.jpg"],"1|67":["ที่ราชพัสดุ/1.67.jpg"],"1|19":["ที่ราชพัสดุ/1.19.jpg"],"1|31":["ที่ราชพัสดุ/1.31.jpg"],"1|72":["ที่ราชพัสดุ/1.72.jpg"],"1|9":["ที่ราชพัสดุ/1.9.jpg"],"1|15":["ที่ราชพัสดุ/1.15.jpg"],"1|3":["ที่ราชพัสดุ/1.3.jpg"],"1|10":["ที่ราชพัสดุ/1.10.jpg"],"1|4":["ที่ราชพัสดุ/1.4.jpg"],"1|1":["ที่ราชพัสดุ/1.1.jpg"],"1|95":["ที่ราชพัสดุ/1.95.jpg"],"1|82":["ที่ราชพัสดุ/1.82.jpg"],"1|48":["ที่ราชพัสดุ/1.48.jpg"],"1|2":["ที่ราชพัสดุ/1.2.jpg"],"1|46":["ที่ราชพัสดุ/1.46.jpg"],"1|40":["ที่ราชพัสดุ/1.40.jpg"],"1|41":["ที่ราชพัสดุ/1.41.jpg"],"1|38":["ที่ราชพัสดุ/1.38.jpg"],"1|37":["ที่ราชพัสดุ/1.37.jpg"],"1|23":["ที่ราชพัสดุ/1.23.jpg"],"1|89":["ที่ราชพัสดุ/1.89.jpg"],"1|92":["ที่ราชพัสดุ/1.92.jpg"],"1|85":["ที่ราชพัสดุ/1.85.jpg"],"1|81":["ที่ราชพัสดุ/1.81.jpg"],"1|88":["ที่ราชพัสดุ/1.88.jpg"],"1|74":["ที่ราชพัสดุ/1.74.jpg"],"1|73":["ที่ราชพัสดุ/1.73.jpg"],"1|30":["ที่ราชพัสดุ/1.30.jpg"],"1|21":["ที่ราชพัสดุ/1.21.jpg"],"1|12":["ที่ราชพัสดุ/1.12.jpg"],"1|71":["ที่ราชพัสดุ/1.71.jpg"],"1|13":["ที่ราชพัสดุ/1.13.jpg"],"1|25":["ที่ราชพัสดุ/1.25.jpg"],"1|6":["ที่ราชพัสดุ/1.6.jpg"],"1|83":["ที่ราชพัสดุ/1.83.jpg"],"1|86":["ที่ราชพัสดุ/1.86.jpg"],"1|75":["ที่ราชพัสดุ/1.75.jpg"],"1|33":["ที่ราชพัสดุ/1.33.jpg"],"1|29":["ที่ราชพัสดุ/1.29.jpg"],"1|45":["ที่ราชพัสดุ/1.45.jpg"],"1|43":["ที่ราชพัสดุ/1.43.jpg"],"1|28":["ที่ราชพัสดุ/1.28.jpg"],"1|54":["ที่ราชพัสดุ/1.54.jpg"],"1|8":["ที่ราชพัสดุ/1.8.jpg"],"1|79":["ที่ราชพัสดุ/1.79.jpg"],"1|34":["ที่ราชพัสดุ/1.34.jpg"],"1|14":["ที่ราชพัสดุ/1.14.jpg"],"1|5":["ที่ราชพัสดุ/1.5.jpg"],"1|49":["ที่ราชพัสดุ/1.49.jpg"],"1|70":["ที่ราชพัสดุ/1.70.jpg"],"1|55":["ที่ราชพัสดุ/1.55.jpg"],"1|18":["ที่ราชพัสดุ/1.18.jpg"],"1|78":["ที่ราชพัสดุ/1.78.jpg"],"1|22":["ที่ราชพัสดุ/1.22.jpg"],"1|77":["ที่ราชพัสดุ/1.77.jpg"],"1|57":["ที่ราชพัสดุ/1.57.jpg"],"1|59":["ที่ราชพัสดุ/1.59.jpg"],"1|60":["ที่ราชพัสดุ/1.60.jpg"],"1|61":["ที่ราชพัสดุ/1.61.jpg"],"1|62":["ที่ราชพัสดุ/1.62.jpg"],"1|68":["ที่ราชพัสดุ/1.68.jpg"],"3|31":["ที่วัดและธรณีสงฆ์/3.31-1.jpg","ที่วัดและธรณีสงฆ์/3.31-2.jpg","ที่วัดและธรณีสงฆ์/3.31-3.jpg","ที่วัดและธรณีสงฆ์/3.31-4.jpg","ที่วัดและธรณีสงฆ์/3.31-5.jpg"],"3|23":["ที่วัดและธรณีสงฆ์/3.23-1.jpg","ที่วัดและธรณีสงฆ์/3.23-2.jpg","ที่วัดและธรณีสงฆ์/3.23-3.jpg"],"3|19":["ที่วัดและธรณีสงฆ์/3.19-1.jpg","ที่วัดและธรณีสงฆ์/3.19-2.jpg","ที่วัดและธรณีสงฆ์/3.19-3.jpg","ที่วัดและธรณีสงฆ์/3.19-4.jpg"],"3|13":["ที่วัดและธรณีสงฆ์/3.13-1.jpg","ที่วัดและธรณีสงฆ์/3.13-2.jpg"],"3|16":["ที่วัดและธรณีสงฆ์/3.16-1.jpg","ที่วัดและธรณีสงฆ์/3.16-2.jpg"],"3|28":["ที่วัดและธรณีสงฆ์/3.28.jpg"],"3|24":["ที่วัดและธรณีสงฆ์/3.24-1.jpg","ที่วัดและธรณีสงฆ์/3.24-2.jpg","ที่วัดและธรณีสงฆ์/3.24-3.jpg"],"3|14":["ที่วัดและธรณีสงฆ์/3.14-1.jpg","ที่วัดและธรณีสงฆ์/3.14-2.jpg","ที่วัดและธรณีสงฆ์/3.14-3.jpg"],"3|20":["ที่วัดและธรณีสงฆ์/3.20.jpg"],"3|25":["ที่วัดและธรณีสงฆ์/3.25-1.jpg","ที่วัดและธรณีสงฆ์/3.25-2.jpg","ที่วัดและธรณีสงฆ์/3.25-3.jpg","ที่วัดและธรณีสงฆ์/3.25-4.jpg","ที่วัดและธรณีสงฆ์/3.25-5.jpg","ที่วัดและธรณีสงฆ์/3.25-6.jpg","ที่วัดและธรณีสงฆ์/3.25-7.jpg","ที่วัดและธรณีสงฆ์/3.25-8.jpg","ที่วัดและธรณีสงฆ์/3.25-9.jpg"],"3|3":["ที่วัดและธรณีสงฆ์/3.3-1.jpg","ที่วัดและธรณีสงฆ์/3.3-2.jpg"],"3|2":["ที่วัดและธรณีสงฆ์/3.2-1.jpg","ที่วัดและธรณีสงฆ์/3.2-2.jpg"],"3|15":["ที่วัดและธรณีสงฆ์/3.15-1.jpg","ที่วัดและธรณีสงฆ์/3.15-2.jpg","ที่วัดและธรณีสงฆ์/3.15-3.jpg","ที่วัดและธรณีสงฆ์/3.15-4.jpg","ที่วัดและธรณีสงฆ์/3.15-5.jpg","ที่วัดและธรณีสงฆ์/3.15-6.jpg","ที่วัดและธรณีสงฆ์/3.15-7.jpg","ที่วัดและธรณีสงฆ์/3.15-8.jpg","ที่วัดและธรณีสงฆ์/3.15-9.jpg","ที่วัดและธรณีสงฆ์/3.15-10.jpg","ที่วัดและธรณีสงฆ์/3.15-11.jpg","ที่วัดและธรณีสงฆ์/3.15-12.jpg","ที่วัดและธรณีสงฆ์/3.15-13.jpg","ที่วัดและธรณีสงฆ์/3.15-14.jpg"],"3|10":["ที่วัดและธรณีสงฆ์/3.10-1.jpg","ที่วัดและธรณีสงฆ์/3.10-2.jpg","ที่วัดและธรณีสงฆ์/3.10-3.jpg","ที่วัดและธรณีสงฆ์/3.10-4.jpg"],"3|42":["ที่วัดและธรณีสงฆ์/3.42-1.jpg","ที่วัดและธรณีสงฆ์/3.42-2.jpg"],"3|43":["ที่วัดและธรณีสงฆ์/3.43.jpg"],"3|18":["ที่วัดและธรณีสงฆ์/3.18-1.jpg","ที่วัดและธรณีสงฆ์/3.18-2.jpg","ที่วัดและธรณีสงฆ์/3.18-3.jpg","ที่วัดและธรณีสงฆ์/3.18-4.jpg","ที่วัดและธรณีสงฆ์/3.18-5.jpg","ที่วัดและธรณีสงฆ์/3.18-6.jpg","ที่วัดและธรณีสงฆ์/3.18-7.jpg"],"3|21":["ที่วัดและธรณีสงฆ์/3.21-1.jpg","ที่วัดและธรณีสงฆ์/3.21-2.jpg","ที่วัดและธรณีสงฆ์/3.21-3.jpg"],"3|22":["ที่วัดและธรณีสงฆ์/3.22-1.jpg","ที่วัดและธรณีสงฆ์/3.22-2.jpg","ที่วัดและธรณีสงฆ์/3.22-3.jpg","ที่วัดและธรณีสงฆ์/3.22-4.jpg","ที่วัดและธรณีสงฆ์/3.22-5.jpg","ที่วัดและธรณีสงฆ์/3.22-6.jpg"],"3|17":["ที่วัดและธรณีสงฆ์/3.17-1.jpg","ที่วัดและธรณีสงฆ์/3.17-2.jpg"],"3|12":["ที่วัดและธรณีสงฆ์/3.12.jpg"],"3|11":["ที่วัดและธรณีสงฆ์/3.11-1.jpg","ที่วัดและธรณีสงฆ์/3.11-2.jpg","ที่วัดและธรณีสงฆ์/3.11-3.jpg","ที่วัดและธรณีสงฆ์/3.11-4.jpg","ที่วัดและธรณีสงฆ์/3.11-5.jpg"],"3|26":["ที่วัดและธรณีสงฆ์/3.26-1.jpg","ที่วัดและธรณีสงฆ์/3.26-2.jpg","ที่วัดและธรณีสงฆ์/3.26-3.jpg"],"3|32":["ที่วัดและธรณีสงฆ์/3.32-1.jpg","ที่วัดและธรณีสงฆ์/3.32-2.jpg"],"3|30":["ที่วัดและธรณีสงฆ์/3.30.jpg"],"3|34":["ที่วัดและธรณีสงฆ์/3.34.jpg"],"3|27":["ที่วัดและธรณีสงฆ์/3.27-1.jpg","ที่วัดและธรณีสงฆ์/3.27-2.jpg","ที่วัดและธรณีสงฆ์/3.27-3.jpg"],"3|4":["ที่วัดและธรณีสงฆ์/3.4.jpg"],"3|5":["ที่วัดและธรณีสงฆ์/3.5-1.jpg","ที่วัดและธรณีสงฆ์/3.5-2.jpg"],"3|9":["ที่วัดและธรณีสงฆ์/3.9-1.jpg","ที่วัดและธรณีสงฆ์/3.9-2.jpg","ที่วัดและธรณีสงฆ์/3.9-3.jpg"],"3|8":["ที่วัดและธรณีสงฆ์/3.8.jpg"],"3|6":["ที่วัดและธรณีสงฆ์/3.6.jpg"],"3|7":["ที่วัดและธรณีสงฆ์/3.7.jpg"],"3|33":["ที่วัดและธรณีสงฆ์/3.33-1.jpg","ที่วัดและธรณีสงฆ์/3.33-2.jpg","ที่วัดและธรณีสงฆ์/3.33-3.jpg"],"3|29":["ที่วัดและธรณีสงฆ์/3.29.jpg"],"3|38":["ที่วัดและธรณีสงฆ์/3.38-1.jpg","ที่วัดและธรณีสงฆ์/3.38-2.jpg"],"3|36":["ที่วัดและธรณีสงฆ์/3.36-1.jpg","ที่วัดและธรณีสงฆ์/3.36-2.jpg","ที่วัดและธรณีสงฆ์/3.36-3.jpg"],"3|35":["ที่วัดและธรณีสงฆ์/3.35.jpg"],"3|37":["ที่วัดและธรณีสงฆ์/3.37-1.jpg","ที่วัดและธรณีสงฆ์/3.37-2.jpg","ที่วัดและธรณีสงฆ์/3.37-3.jpg"],"3|41":["ที่วัดและธรณีสงฆ์/3.41-1.jpg","ที่วัดและธรณีสงฆ์/3.41-2.jpg","ที่วัดและธรณีสงฆ์/3.41-3.jpg"],"3|40":["ที่วัดและธรณีสงฆ์/3.40.jpg"],"3|39":["ที่วัดและธรณีสงฆ์/3.39-1.jpg","ที่วัดและธรณีสงฆ์/3.39-2.jpg"],"3|46":["ที่วัดและธรณีสงฆ์/3.46.jpg"],"3|45":["ที่วัดและธรณีสงฆ์/3.45-1.jpg","ที่วัดและธรณีสงฆ์/3.45-2.jpg"],"3|44":["ที่วัดและธรณีสงฆ์/3.44.jpg"],"3|1":["ที่วัดและธรณีสงฆ์/3.1.jpg"],"4|2":["ที่สุสาน (สาธารณะและเอกชน)/4.2.jpg"],"4|12":["ที่สุสาน (สาธารณะและเอกชน)/4.12.jpg"],"4|4":["ที่สุสาน (สาธารณะและเอกชน)/4.4.jpg"],"4|3":["ที่สุสาน (สาธารณะและเอกชน)/4.3.jpg"],"4|9":["ที่สุสาน (สาธารณะและเอกชน)/4.9.jpg"],"4|5":["ที่สุสาน (สาธารณะและเอกชน)/4.5.jpg"],"4|7":["ที่สุสาน (สาธารณะและเอกชน)/4.7.jpg"],"4|8":["ที่สุสาน (สาธารณะและเอกชน)/4.8.jpg"],"4|11":["ที่สุสาน (สาธารณะและเอกชน)/4.11.jpg"],"4|1":["ที่สุสาน (สาธารณะและเอกชน)/4.1.jpg"],"4|6":["ที่สุสาน (สาธารณะและเอกชน)/4.6.jpg"],"4|10":["ที่สุสาน (สาธารณะและเอกชน)/4.10.jpg"],"5|8":["ที่เทศบาล/5.8-1.jpg","ที่เทศบาล/5.8-2.jpg","ที่เทศบาล/5.8-3.jpg","ที่เทศบาล/5.8-4.jpg","ที่เทศบาล/5.8-5.jpg"],"5|7":["ที่เทศบาล/5.7.jpg"],"5|6":["ที่เทศบาล/5.6-1.jpg","ที่เทศบาล/5.6-2.jpg"],"5|4":["ที่เทศบาล/5.4-1.jpg","ที่เทศบาล/5.4-2.jpg","ที่เทศบาล/5.4-3.jpg","ที่เทศบาล/5.4-4.jpg"],"5|5":["ที่เทศบาล/5.5.jpg"],"5|3":["ที่เทศบาล/5.3-1.jpg","ที่เทศบาล/5.3-2.jpg","ที่เทศบาล/5.3-3.jpg","ที่เทศบาล/5.3-4.jpg"],"5|1":["ที่เทศบาล/5.1-1.jpg","ที่เทศบาล/5.1-2.jpg"],"5|2":["ที่เทศบาล/5.2.jpg"],"6|10":["ที่รัฐวิสาหกิจ/6.10.jpg"],"6|8":["ที่รัฐวิสาหกิจ/6.8-1.jpg","ที่รัฐวิสาหกิจ/6.8-2.jpg","ที่รัฐวิสาหกิจ/6.8-3.jpg"],"6|9":["ที่รัฐวิสาหกิจ/6.9.jpg"],"6|1":["ที่รัฐวิสาหกิจ/6.1.jpg"],"6|2":["ที่รัฐวิสาหกิจ/6.2-1.jpg","ที่รัฐวิสาหกิจ/6.2-2.jpg","ที่รัฐวิสาหกิจ/6.2-3.jpg","ที่รัฐวิสาหกิจ/6.2-4.jpg","ที่รัฐวิสาหกิจ/6.2-5.jpg"],"6|3":["ที่รัฐวิสาหกิจ/6.3-1.jpg","ที่รัฐวิสาหกิจ/6.3-2.jpg","ที่รัฐวิสาหกิจ/6.3-3.jpg","ที่รัฐวิสาหกิจ/6.3-4.jpg","ที่รัฐวิสาหกิจ/6.3-5.jpg","ที่รัฐวิสาหกิจ/6.3-6.jpg","ที่รัฐวิสาหกิจ/6.3-7.jpg","ที่รัฐวิสาหกิจ/6.3-8.jpg","ที่รัฐวิสาหกิจ/6.3-9.jpg","ที่รัฐวิสาหกิจ/6.3-10.jpg","ที่รัฐวิสาหกิจ/6.3-11.jpg","ที่รัฐวิสาหกิจ/6.3-12.jpg","ที่รัฐวิสาหกิจ/6.3-13.jpg","ที่รัฐวิสาหกิจ/6.3-14.jpg","ที่รัฐวิสาหกิจ/6.3-15.jpg","ที่รัฐวิสาหกิจ/6.3-16.jpg","ที่รัฐวิสาหกิจ/6.3-17.jpg","ที่รัฐวิสาหกิจ/6.3-18.jpg","ที่รัฐวิสาหกิจ/6.3-19.jpg","ที่รัฐวิสาหกิจ/6.3-20.jpg","ที่รัฐวิสาหกิจ/6.3-21.jpg","ที่รัฐวิสาหกิจ/6.3-22.jpg","ที่รัฐวิสาหกิจ/6.3-23.jpg","ที่รัฐวิสาหกิจ/6.3-24.jpg","ที่รัฐวิสาหกิจ/6.3-25.jpg","ที่รัฐวิสาหกิจ/6.3-26.jpg","ที่รัฐวิสาหกิจ/6.3-27.jpg","ที่รัฐวิสาหกิจ/6.3-28.jpg"],"6|4":["ที่รัฐวิสาหกิจ/6.4.jpg"],"6|6":["ที่รัฐวิสาหกิจ/6.6-1.jpg","ที่รัฐวิสาหกิจ/6.6-2.jpg"],"6|5":["ที่รัฐวิสาหกิจ/6.5-1.jpg","ที่รัฐวิสาหกิจ/6.5-2.jpg","ที่รัฐวิสาหกิจ/6.5-3.jpg","ที่รัฐวิสาหกิจ/6.5-4.jpg"],"6|7":["ที่รัฐวิสาหกิจ/6.7.jpg"],"6|11":["ที่รัฐวิสาหกิจ/6.11.jpg"],"6|12":["ที่รัฐวิสาหกิจ/6.12.jpg"]};
+</script>
+
+<script>
+/* ================= map.js ================= */
+/* เลือกโซนสีจากแผนที่ shapefile (Leaflet + shpjs)
+   ต้องใช้คู่กับ html: ปุ่ม #mapBtn และกลุ่มปุ่มโซน #zones */
+(function(){
+  var START_FULL = true;   // true = แผนที่เปิดมาเต็มจอเลย (กดปุ่ม 🗗 มุมขวาบนเพื่อย่อได้)
+  var AUTO_OPEN  = true;   // true = เปิดหน้าเว็บแล้วแสดงแผนที่ทันที ไม่ต้องกดปุ่ม (false = รอกดปุ่ม #mapBtn)
+
+  /* รายการ shapefile ที่เลือกเปิด/ปิดได้ (ปุ่มซ้อนชั้นมุมขวาบนของแผนที่)
+     1 shapefile = 1 ไฟล์ .zip (วางโฟลเดอร์เดียวกับ .html)
+       id    : ชื่อเรียกภายใน (ไม่ซ้ำกัน)
+       name  : ชื่อที่แสดงในรายการเลือก
+       zip   : ชื่อไฟล์ .zip
+       label : คอลัมน์ที่ใช้เป็น label บนแผนที่ (ไม่ใส่ = ไม่มี label)
+       color : true = ระบายสีตามโซนด้วยคอลัมน์ field + มีปุ่มเลือกโซนใน popup (ใช้กับผังเมืองเท่านั้น)
+       field : คอลัมน์สีผังเมือง (ใช้เมื่อ color:true)
+       fill  : สีของชั้นที่ไม่ใช่ผังเมือง (เช่น "#e11d48")
+       size      : ขนาดจุด (รัศมี px) สำหรับชั้นที่เป็นจุด ค่าเริ่มต้น 6   stroke: สีขอบ (จุดเริ่มต้นขอบขาว)
+       colorBy   : คอลัมน์ที่ใช้แยกสีตามประเภท (ชั้นที่ไม่ใช่ผังเมือง) มีคำอธิบายสีมุมซ้ายล่าง
+       colorName : คอลัมน์ชื่อประเภทที่ใช้แสดงในคำอธิบายสี (ไม่ใส่ = ใช้ค่าใน colorBy)
+       image     : ที่อยู่รูปแผนผังแบบชื่อไฟล์ตรงกับคอลัมน์ ใส่ {ชื่อคอลัมน์} แทนค่าของแปลงได้ จะใส่หลายแบบเป็น [ ] ก็ได้ (popup มีปุ่ม "ดูแผนผัง" กดแล้วจึงโหลดรูป ลองตามลำดับจนเจอ)
+       imageField: ชื่อคอลัมน์ในตารางที่เก็บชื่อไฟล์รูปโดยตรง (ลองก่อนแบบอื่น)  imageExts: นามสกุลที่ลองแทน {ext}  imageDir: โฟลเดอร์รูป
+       imageVars : ฟังก์ชันสร้างตัวแปรเพิ่มให้ใส่ใน image ได้ เช่น {N} (คำนวณจากคอลัมน์อื่น)
+       imageMap  : ใช้ต่อจาก image เมื่อชื่อไฟล์ไม่ตรงกับข้อมูล จับคู่เอง เช่น {"13_013":"IMG_0123.jpg"} คู่กับ imageKey (คอลัมน์ที่ใช้เป็นคีย์ ค่าเริ่มต้น LO_NO) และ imageDir (โฟลเดอร์ เช่น "plans/")
+       colors    : กำหนดสีเองบางประเภท เช่น {"1":"#e6194b"} (ประเภทที่ไม่ได้ใส่จะได้สีอัตโนมัติ)
+       on    : true = เปิดแสดงตั้งแต่แรก, ไม่ใส่ = ปิดไว้ แล้วโหลดเมื่อติ๊กเลือก */
+  const originalUrl = "http://gis124.cotdev.com/436704/landown/";
+  var LAYERS = [
+    {id:"landown", 
+      name:"กรรมสิทธิ์ที่ดิน", 
+      zip:getHttpsCompatibleUrl(originalUrl + "landown.zip"), 
+      label:"LO_CODE", fill:"#e11d48", colorBy:"LO_GRP", legend:false, 
+      imageDir:"https://images.weserv.nl/?url=http://gis124.cotdev.com/436704/landown/plans/", 
+      imageKeyFields:["LO_GRP","LO_SUB"], imageMap:window.LANDOWN_IMAGE_MAP, colors:{
+        "1":"#326DAB",
+        "3":"#503756",
+        "4":"#644255",
+        "5":"#BA3430",
+        "6":"#42946A",
+        "7":"#5C3A28",
+        "8":"#14b8a6",
+        "11":"#f97316",
+        "13":"#74A285",
+        "14":"#7D9E5A",
+        "16":"#A27E45",
+        "18":"#B2B22E"},
+       on:true},
+    {id:"plan", 
+      name:"ร่างผังเมืองรวม", 
+      zip: getHttpsCompatibleUrl(originalUrl + "shapefile.zip"), 
+      field:"PL_GROUP", 
+      label:"PL_BLOCK", 
+      color:true, on:true
+    },
+    {id: "point",
+      name: "นามศัพท์",
+      zip: getHttpsCompatibleUrl(originalUrl + "นามศัพท์.zip"),
+      label: "PL_BLOCK",
+      fill: "#e09e41",
+      stroke: "#ffffff",
+      size: 5,
+      on: true
+    }
+  ];
+  /* ชั้นอัตโนมัติ: ทุกไฟล์ .zip ที่ build_shapes.py รวมไว้ใน shapes.js จะถูกเพิ่มเป็นชั้นให้เอง
+     (ถ้าชื่อไฟล์ซ้ำกับที่ตั้งไว้ใน LAYERS ด้านบน จะใช้ค่าที่ตั้งไว้) */
+  var SHAPES = window.SHAPES || {};
+  var AUTO_COLORS = ["#e11d48","#0ea5e9","#f59e0b","#10b981","#8b5cf6","#ec4899","#14b8a6","#f97316"];
+  Object.keys(SHAPES).forEach(function(fn){
+    if(LAYERS.some(function(c){return c.zip===fn}))return;
+    LAYERS.push({id:fn,name:fn.replace(/\.zip$/i,""),zip:fn,fill:AUTO_COLORS[LAYERS.length%AUTO_COLORS.length],on:!LAYERS.some(function(x){return x.on}),auto:true});
+  });
+  function b64buf(b64){var bin=atob(b64),u=new Uint8Array(bin.length);for(var i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);return u.buffer;}
+  var LABEL_MIN_ZOOM = 14;         // แสดง label เมื่อซูมตั้งแต่ระดับนี้ขึ้นไป (กันตัวหนังสือทับกัน)
+  var LEAFLET = "https://unpkg.com/leaflet@1.9.4/dist/";
+  var SHPJS   = "https://unpkg.com/shpjs@3.6.3/dist/shp.min.js";
+  var COLORS  = {
+    "ก.1":"#1fa939","ก.2":"#70e268","ก.3":"#b2df8a",
+    "ย.1":"#fff128","ย.2":"#ff7f00",
+    "พ.1":"#ff2323","พ.2":"#e31a1c",
+    "อ.1":"#67088d","อ.2":"#c38dd6",
+    "ล.":"#a6fa91","ศน.":"#b6b6b6","ศษ.":"#84a553",
+    "ส.":"#0007ff","อศ.":"#8c5a38","อป.":"#f1f1f1"
+  };
+  var OTHER = "#000000";
+
+  var $ = function(i){return document.getElementById(i)};
+  var map, built = false, back, box;
+
+  function loadCss(href){var l=document.createElement("link");l.rel="stylesheet";l.href=href;document.head.appendChild(l);}
+  function loadJs(src){return new Promise(function(ok,ng){
+    var s=document.createElement("script");s.src=src;s.onload=ok;s.onerror=function(){ng(new Error("โหลดไม่ได้: "+src))};document.head.appendChild(s);
+  });}
+  function esc(v){return String(v==null?"":v).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
+  function norm(s){return String(s==null?"":s).replace(/\s+/g,"")}
+
+  /* สีพื้น + สีตัวอักษรที่อ่านออก */
+  function fillOf(val){return COLORS[norm(val)]||OTHER}
+  function textOn(hex){
+    var n=parseInt(hex.slice(1),16),r=n>>16,g=(n>>8)&255,b=n&255;
+    return(0.299*r+0.587*g+0.114*b)>150?"#1b2333":"#fff";
+  }
+
+  /* ---------- โซนจาก #zones ---------- */
+  function findZoneBtn(val){
+    var bs=$("zones").querySelectorAll("button"),k=norm(val);
+    for(var i=0;i<bs.length;i++)if(norm(bs[i].textContent)===k)return bs[i];
+    return null;
+  }
+
+  /* ---------- popup ของ feature (ปุ่มเลือก/ข้อความ อยู่ด้านบน แล้วตามด้วยตาราง) ---------- */
+  function imageSrcs(cfg,props){   // รายการที่อยู่รูปที่จะลองตามลำดับ: (1) คอลัมน์ที่เก็บชื่อรูป (2) ชื่อไฟล์ตรงกับข้อมูล (3) ตารางจับคู่ image_map.js
+    props=props||{};
+    var out=[];
+    function add(u){if(u&&out.indexOf(u)<0)out.push(u);}
+    var dir=cfg.imageDir||"";
+    // (1) imageField: ถ้าในตารางมีคอลัมน์ที่เก็บชื่อไฟล์/ลิงก์รูปโดยตรง ใช้ก่อนเลย
+    [].concat(cfg.imageField||[]).forEach(function(col){
+      var v=props[col];if(v==null)return;v=String(v).trim();if(!v)return;
+      add(/^(https?:)?\/\//.test(v)||v.charAt(0)==="/"?encodeURI(v):dir+v.split("/").map(encodeURIComponent).join("/"));
+    });
+    // (2) image: แบบชื่อไฟล์ที่ประกอบจากข้อมูล ใส่ {ชื่อคอลัมน์} ได้ และ {ext} จะลองทุกนามสกุลใน imageExts
+    var vars=props;
+    if(cfg.imageVars){vars={};for(var q in props)vars[q]=props[q];var ex=cfg.imageVars(props)||{};for(var q2 in ex)vars[q2]=ex[q2];}
+    var exts=cfg.imageExts||["jpg","png","jpeg","JPG","PNG"];
+    [].concat(cfg.image||[]).forEach(function(t0){
+      (t0.indexOf("{ext}")>=0?exts.map(function(e){return t0.replace("{ext}",e)}):[t0]).forEach(function(t){
+        var ok=true;
+        var src=t.replace(/\{(\w+)\}/g,function(_,k){
+          var v=vars[k];if(v==null||String(v).trim()==="")ok=false;
+          return encodeURIComponent(String(v==null?"":v).trim());
+        });
+        if(ok)add(src);
+      });
+    });
+    // (3) imageMap: ตารางจับคู่ (คีย์ = ค่าในคอลัมน์ imageKey)
+    if(cfg.imageMap){
+      var k;
+      if(cfg.imageKeyFields && cfg.imageKeyFields.length){
+        k=cfg.imageKeyFields.map(function(col){
+          var v=props[col];
+          if(v==null)return "";
+          return String(v).trim().replace(/\\.0$/,"");
+        }).join("|");
+      }else{
+        k=props[cfg.imageKey||"LO_NO"];
+        k=k==null?"":String(k).trim();
+      }
+      var f=k?cfg.imageMap[k]:null;
+      if(f){
+        [].concat(f).forEach(function(path){
+          add(dir+String(path).split("/").map(encodeURIComponent).join("/"));
+        });
+      }
+    }
+    return out;
+  }
+  function openLightbox(src){
+    var oldOverflow=document.body.style.overflow;
+    var lb=document.createElement("div");lb.className="mm-lb";
+    var im=new Image();im.alt="แผนผัง";
+    im.style.width="auto";im.style.height="auto";
+    var x=document.createElement("button");x.type="button";x.className="mm-lbx";x.textContent="✕";x.setAttribute("aria-label","ปิดรูป");
+    var hint=document.createElement("div");hint.className="mm-lbh";
+    hint.textContent="ลากเพื่อเลื่อน · Esc หรือ x เพื่อปิด";
+
+    var controls=document.createElement("div");controls.className="mm-zoom-controls";
+    var minus=document.createElement("button");minus.type="button";minus.textContent="−";minus.setAttribute("aria-label","ซูมออก");
+    var reset=document.createElement("button");reset.type="button";reset.textContent="รีเซ็ต";
+    var plus=document.createElement("button");plus.type="button";plus.textContent="+";
+    controls.appendChild(minus);controls.appendChild(reset);controls.appendChild(plus);
+
+    var scale=1,baseW=0,baseH=0,minScale=.15,maxScale=8;
+    function setScale(next,center){
+      if(!baseW||!baseH)return;
+      var old=scale;
+      scale=Math.max(minScale,Math.min(maxScale,next));
+      var cx=center?center.x:lb.clientWidth/2;
+      var cy=center?center.y:lb.clientHeight/2;
+      var relX=(lb.scrollLeft+cx)/Math.max(1,im.offsetWidth);
+      var relY=(lb.scrollTop+cy)/Math.max(1,im.offsetHeight);
+      im.style.width=(baseW*scale)+"px";
+      im.style.height=(baseH*scale)+"px";
+      requestAnimationFrame(function(){
+        lb.scrollLeft=relX*im.offsetWidth-cx;
+        lb.scrollTop=relY*im.offsetHeight-cy;
+      });
+      lb.classList.toggle("zoom",scale>1.01);
+    }
+    function fitImage(){
+      baseW=im.naturalWidth;baseH=im.naturalHeight;
+      var fit=Math.min((lb.clientWidth-24)/baseW,(lb.clientHeight-70)/baseH,1);
+      scale=Math.max(minScale,fit);
+      im.style.width=(baseW*scale)+"px";
+      im.style.height=(baseH*scale)+"px";
+      lb.scrollLeft=0;lb.scrollTop=0;
+    }
+    function closeLb(){
+      window.removeEventListener("keydown",onKey,true);
+      document.body.style.overflow=oldOverflow;
+      lb.remove();
+    }
+    function onKey(e){if(e.key==="Escape"){e.stopPropagation();e.preventDefault();closeLb();}}
+    plus.onclick=function(){setScale(scale*1.25)};
+    minus.onclick=function(){setScale(scale/1.25)};
+    reset.onclick=fitImage;
+    lb.addEventListener("wheel",function(e){
+      e.preventDefault();
+      var r=lb.getBoundingClientRect();
+      setScale(scale*(e.deltaY<0?1.12:1/1.12),{x:e.clientX-r.left,y:e.clientY-r.top});
+    },{passive:false});
+
+    // Pinch zoom for touch screens.
+    var pointers={};
+    lb.addEventListener("pointerdown",function(e){
+      if(e.target===x||controls.contains(e.target))return;
+      pointers[e.pointerId]={x:e.clientX,y:e.clientY,startX:e.clientX,startY:e.clientY,scrollX:lb.scrollLeft,scrollY:lb.scrollTop};
+      if(Object.keys(pointers).length===2){
+        var pts=Object.keys(pointers).map(function(k){return pointers[k]});
+        lb._pinchStart=Math.hypot(pts[0].x-pts[1].x,pts[0].y-pts[1].y);
+        lb._pinchScale=scale;
+      }
+    });
+    lb.addEventListener("pointermove",function(e){
+      if(!pointers[e.pointerId])return;
+      pointers[e.pointerId]={x:e.clientX,y:e.clientY};
+      var keys=Object.keys(pointers);
+      if(keys.length===1 && scale>1){
+        var p=pointers[e.pointerId];
+        lb.scrollLeft=p.scrollX-(e.clientX-p.startX);
+        lb.scrollTop=p.scrollY-(e.clientY-p.startY);
+        e.preventDefault();
+      }else if(keys.length===2){
+        var p1=pointers[keys[0]],p2=pointers[keys[1]];
+        var dist=Math.hypot(p1.x-p2.x,p1.y-p2.y);
+        if(lb._pinchStart>0){
+          var r=lb.getBoundingClientRect();
+          setScale(lb._pinchScale*(dist/lb._pinchStart),{x:(p1.x+p2.x)/2-r.left,y:(p1.y+p2.y)/2-r.top});
+        }
+        e.preventDefault();
+      }
+    },{passive:false});
+    function pointerEnd(e){delete pointers[e.pointerId];if(Object.keys(pointers).length<2)lb._pinchStart=0;}
+    lb.addEventListener("pointerup",pointerEnd);
+    lb.addEventListener("pointercancel",pointerEnd);
+
+    lb.onclick=function(e){if(e.target===lb)closeLb();};
+    x.onclick=closeLb;
+    window.addEventListener("keydown",onKey,true);
+    document.body.style.overflow="hidden";
+    lb.appendChild(im);lb.appendChild(controls);lb.appendChild(x);lb.appendChild(hint);
+    document.body.appendChild(lb);
+    im.onload=fitImage;
+    im.src=src;
+  }
+  function visibleFields(cfg, props) {
+    props = props || {};
+
+    var all = window.FIELD_CONFIG || {};
+    var fl = all[cfg.zip] || all[cfg.id];
+
+    // ถ้าไม่มีการตั้งค่า ไม่แสดง Attribute
+    if (!fl) return [];
+
+    var out = [];
+
+    fl.forEach(function(x) {
+      // แสดงเฉพาะ show = 1 และมีฟิลด์อยู่จริง
+      if (Number(x.s) !== 1) return;
+      if (!(x.f in props)) return;
+
+      out.push([
+        x.f,
+        x.l || x.f
+      ]);
+    });
+
+    return out;
+  }
+  function buildPopup(props,cfg){
+    var el=document.createElement("div");
+    var val=(cfg.color&&props)?props[cfg.field]:null;
+    if(val!=null&&val!==""){
+      var zb=findZoneBtn(val);
+      if(zb){
+        var bg=fillOf(val),d=document.createElement("div");d.className="mm-pick";
+        d.innerHTML="<small>เลือกโซนสีนี้</small>";
+        var b=document.createElement("button");b.type="button";
+        b.style.cssText="--zc:"+bg+";--zt:"+textOn(bg);
+        b.innerHTML="<i></i>"+esc(zb.textContent);
+        b.onclick=function(){close();zb.click();};
+        d.appendChild(b);el.appendChild(d);
+      }else{
+        var n=document.createElement("div");n.className="mm-none";
+        n.textContent="โซน \""+val+"\" ไม่มีในรายการสีผังเมืองของเครื่องคำนวณ";
+        el.appendChild(n);
+      }
+    }
+
+    // แสดง Attribute ก่อน
+    var h="<table>";
+    visibleFields(cfg,props).forEach(function(p){
+      h+="<tr><td>"+esc(p[1])+"</td><td>"+esc(props[p[0]])+"</td></tr>";
+    });
+    var t=document.createElement("div");t.innerHTML=h+"</table>";
+    el.appendChild(t);
+
+    // โหลดรูปทุกหน้าที่จับคู่กับ LO_GRP + LO_SUB และวางไว้ด้านล่างตาราง
+    var imgSrcs=[];try{imgSrcs=imageSrcs(cfg,props)}catch(e){console.warn("สร้างที่อยู่รูปไม่ได้",e)}
+    if(imgSrcs.length){
+      var wrap=document.createElement("div");wrap.className="mm-img";
+      var ibox=document.createElement("div"),loaded=0,pending=imgSrcs.length;
+      imgSrcs.forEach(function(src){
+        var im=new Image();im.alt="แผนผัง";
+        im.onload=function(){
+          loaded++;pending--;
+          im.title="แตะหรือคลิกรูปเพื่อขยาย";
+          im.style.maxHeight="220px";
+          im.onclick=function(){openLightbox(src)};
+          var cap=document.createElement("small");cap.className="mm-cap";
+          cap.textContent="แผนผัง "+loaded+" · แตะรูปเพื่อขยาย";
+          ibox.appendChild(im);ibox.appendChild(cap);
+        };
+        im.onerror=function(){
+          pending--;
+          if(pending===0 && !loaded){
+            var m=document.createElement("div");m.className="mm-none";
+            m.textContent="ไม่พบรูปแผนผังของแปลงนี้";
+            ibox.appendChild(m);
+          }
+        };
+        im.src=src;
+      });
+      wrap.appendChild(ibox);
+      el.appendChild(wrap);
+    }
+    return el;
+  }
+
+  function fit(only){   // only = ชั้นที่ให้ซูมไปหา (ไม่ใส่ = รวมทุกชั้นที่เปิดอยู่)
+    if(!map)return;
+    map.invalidateSize();
+    var b=null;
+    LAYERS.forEach(function(c){
+      if((!only||c===only)&&c.loaded&&map.hasLayer(c.layer)){
+        var lb=c.layer.getBounds();
+        if(lb.isValid())b=b?b.extend(lb):L.latLngBounds(lb.getSouthWest(),lb.getNorthEast());
+      }
+    });
+    if(b&&b.isValid())map.fitBounds(b,{padding:[10,10],maxZoom:17});
+  }
+  var GRP_PALETTE=["#e6194b","#3cb44b","#4363d8","#f58231","#911eb4","#46f0f0","#f032e6","#bcf60c","#008080","#9a6324","#800000"];
+  function groupColor(c,p){   // สีตามประเภทของแปลง (ประเภทเดียวกันได้สีเดียวกัน)
+    var v=String(p[c.colorBy]==null?"":p[c.colorBy]).trim();
+    c._gc=c._gc||{};c._gnm=c._gnm||{};c._gn=c._gn||0;
+    if(!c._gc[v]){
+      c._gc[v]=(c.colors&&c.colors[v])||GRP_PALETTE[c._gn++%GRP_PALETTE.length];
+      var nm=c.colorName&&p[c.colorName];
+      c._gnm[v]=(nm!=null&&String(nm).trim()!=="")?String(nm).trim():(v||"(ไม่ระบุ)");
+    }
+    return c._gc[v];
+  }
+  function updLegend(){   // กล่องคำอธิบายสีมุมซ้ายล่าง (เฉพาะชั้นที่แยกสีตามประเภทและเปิดอยู่)
+    if(!map)return;
+    if(!map._mmLegend){
+      var Lg=L.Control.extend({options:{position:"bottomleft"},onAdd:function(){
+        var d=L.DomUtil.create("div","mm-legend");
+        var t=L.DomUtil.create("button","mm-legend-toggle",d);
+        t.type="button";t.textContent="สี ▾";
+        t.onclick=function(){
+          var opened=d.classList.toggle("open");
+          t.textContent=opened?"สี ▴":"สี ▾";
+        };
+        L.DomEvent.disableClickPropagation(d);L.DomEvent.disableScrollPropagation(d);return d;}});
+      map._mmLegend=new Lg();map._mmLegend.addTo(map);
+      var items=L.DomUtil.create("div","mm-legend-items",map._mmLegend.getContainer());
+    }
+    var h="";
+    LAYERS.forEach(function(c){
+      if(!c.colorBy||c.legend===false||!c.loaded||!c._gc||!map.hasLayer(c.layer))return;
+      h+="<b>"+esc(c.name)+"</b>";
+      Object.keys(c._gc).sort(function(a,b){return a.localeCompare(b,"th",{numeric:true})}).forEach(function(v){
+        h+='<div><i style="background:'+c._gc[v]+'"></i>'+esc(c._gnm[v])+"</div>";
+      });
+    });
+    var el=map._mmLegend.getContainer();
+    var items=el.querySelector(".mm-legend-items");
+    if(items)items.innerHTML=h;
+    el.style.display=h?"":"none";
+  }
+  function makeLayer(c){   // สร้างชั้นเปล่าไว้ก่อน แล้วค่อยเติมข้อมูลตอนโหลดไฟล์
+    c.layer=L.geoJSON(null,{
+      pointToLayer:function(f,ll){return L.circleMarker(ll,{radius:c.size||6});},   // ชั้นที่เป็นจุด: วงกลมเล็กแทนหมุดใหญ่ (ขนาดตั้งที่ size)
+      style:function(f){
+        var p=f.properties||{};
+        var fc=c.color?fillOf(p[c.field]):(c.colorBy?groupColor(c,p):(c.fill||"#3388ff"));
+        if(f.geometry&&/Point$/.test(f.geometry.type))
+          return{radius:c.size||6,color:c.stroke||"#ffffff",weight:1.5,fillColor:fc,fillOpacity:.95};
+        return{color:(c.color||c.colorBy)?"#1b2333":(c.stroke||c.fill||"#3388ff"),weight:1,
+               fillColor:fc,fillOpacity:.6};
+      },
+      onEachFeature:function(f,l){
+        l.bindPopup(function(){return buildPopup(f.properties,c)},{className:"mm-pop",minWidth:260,maxWidth:260});
+        var t=c.label&&f.properties&&f.properties[c.label];
+        var isPt=f.geometry&&/Point$/.test(f.geometry.type);
+        if(t!=null&&t!=="")l.bindTooltip(String(t),isPt?{permanent:true,direction:"top",offset:[0,-(c.size||6)],className:"mm-lbl"}:{permanent:true,direction:"center",className:"mm-lbl"});
+      }
+    });
+  }
+  function showData(c,gj){
+    if(Array.isArray(gj))gj={type:"FeatureCollection",features:gj.reduce(function(a,g){return a.concat(g.features||[])},[])};
+    var p0=(gj.features.length&&gj.features[0].properties)||{};
+    if(c.auto){   // ชั้นอัตโนมัติ: ถ้ามีคอลัมน์ผังเมืองให้ระบายสีตามโซน
+      if("PL_GROUP" in p0){c.color=true;c.field="PL_GROUP";}
+      if("PL_BLOCK" in p0)c.label="PL_BLOCK";
+    }
+    var g0=gj.features.length&&gj.features[0].geometry;
+    c.isPoint=!!(g0&&/Point$/.test(g0.type));
+    c.layer.clearLayers();
+    c.layer.addData(gj);
+    if(c.isPoint)c.layer.bringToFront();   // จุดอยู่เหนือพื้นที่เสมอ
+    c.loaded=true;
+    fit(c);
+    updLabels();
+    updLegend();
+    var p=gj.features.length&&gj.features[0].properties;
+    if(c.color&&p&&!(c.field in p))console.warn("["+c.name+"] ไม่พบคอลัมน์ "+c.field+" (มี: "+Object.keys(p).join(", ")+")");
+  }
+  function fromBuffer(c,buf){
+    return shp(buf).then(function(gj){showData(c,gj)}).catch(function(e){alert("อ่านไฟล์ shapefile ["+c.name+"] ไม่ได้: "+e.message)});
+  }
+  /* ถ้าโหลด .zip อัตโนมัติไม่ได้ (เช่น เปิดแบบ file://) ให้มีปุ่มเลือกไฟล์บนแผนที่ */
+  function addPicker(c){
+    if(c.picker)return;
+    var C=L.Control.extend({options:{position:"topleft"},onAdd:function(){
+      var d=L.DomUtil.create("div","mm-picker leaflet-bar"),
+          t=L.DomUtil.create("small","",d),
+          i=L.DomUtil.create("input","",d);
+      t.textContent="เลือกไฟล์ "+c.zip+" ("+c.name+")";
+      i.type="file";i.accept=".zip";
+      i.onchange=function(){
+        var f=i.files[0];if(!f)return;
+        var r=new FileReader();
+        r.onload=function(){fromBuffer(c,r.result).then(function(){map.removeControl(c.picker);c.picker=null})};
+        r.readAsArrayBuffer(f);
+      };
+      L.DomEvent.disableClickPropagation(d);
+      return d;
+    }});
+    c.picker=new C();c.picker.addTo(map);
+  }
+  function fromUrl(c){
+    if(SHAPES[c.zip])return fromBuffer(c,b64buf(SHAPES[c.zip]));   // ข้อมูลที่รวมไว้ใน shapes.js (ใช้ได้แม้เปิดแบบ file://)
+    return fetch(c.zip).then(function(r){if(!r.ok)throw new Error(r.status);return r.arrayBuffer()})
+      .then(function(buf){return fromBuffer(c,buf)})
+      .catch(function(e){
+        console.warn("โหลด "+c.zip+" ไม่ได้",e);
+        if(!fromUrl.warned){fromUrl.warned=1;alert("โหลด "+c.zip+" ไม่ได้\nให้รัน build_shapes.py ในโฟลเดอร์นี้ก่อน (จะสร้าง shapes.js) หรือเปิดผ่านเว็บเซิร์ฟเวอร์");}
+      });
+  }
+  function ensureLoaded(c){   // โหลดไฟล์ของชั้นนี้ครั้งแรกที่ถูกเปิดใช้
+    if(c.loaded||c.loading||c.picker)return;
+    c.loading=true;
+    fromUrl(c).then(function(){c.loading=false});
+  }
+
+  /* ---------- label: ซ่อนเมื่อซูมออกไกล ---------- */
+  function updLabels(){
+    box.querySelector(".mm-map").classList.toggle("mm-showlbl",map.getZoom()>=LABEL_MIN_ZOOM);
+  }
+
+  /* ---------- ค้นหาจาก lat, long ---------- */
+  var searchLayer;
+  function ringHas(ring,lat,lng){   // ray casting
+    var c=false,i,j;
+    for(i=0,j=ring.length-1;i<ring.length;j=i++){
+      var a=ring[i],b=ring[j];
+      if((a.lat>lat)!==(b.lat>lat)&&lng<(b.lng-a.lng)*(lat-a.lat)/(b.lat-a.lat)+a.lng)c=!c;
+    }
+    return c;
+  }
+  function polyHas(rings,lat,lng){  // rings[0]=ขอบนอก ที่เหลือ=รู
+    if(!rings.length||!ringHas(rings[0],lat,lng))return false;
+    for(var i=1;i<rings.length;i++)if(ringHas(rings[i],lat,lng))return false;
+    return true;
+  }
+  function layerHas(l,lat,lng){
+    if(l.getLatLng&&!l.getLatLngs)return map.distance(l.getLatLng(),[lat,lng])<=20;   // ชั้นจุด
+    var ll=l.getLatLngs&&l.getLatLngs();
+    if(!ll||!ll.length)return false;
+    if(ll[0].lat!==undefined)return ringHas(ll,lat,lng);                  // ring เดี่ยว
+    if(ll[0][0]&&ll[0][0].lat!==undefined)return polyHas(ll,lat,lng);     // Polygon
+    return ll.some(function(p){return polyHas(p,lat,lng)});              // MultiPolygon
+  }
+  function num(inp){
+    var m=inp.value.replace(/[°\s]/g,"").match(/^-?\d+(?:\.\d+)?$/);
+    return m?+m[0]:NaN;
+  }
+  function parsePair(s){   // "14.59, 101.01" / "14.59 101.01" -> [lat,lng] หรือ null
+    var m=String(s).replace(/°/g," ").match(/^\s*(-?\d+(?:\.\d+)?)\s*[,;\s]\s*(-?\d+(?:\.\d+)?)\s*$/);
+    return m?[+m[1],+m[2]]:null;
+  }
+  function doSearch(lat,lng,ia,io){   // ia/io = ช่องที่จะขึ้นกรอบแดงเมื่อค่าผิด (โหมดช่องเดียวใช้ช่องเดียวกัน)
+    var bad=[];
+    if(!(Math.abs(lat)<=90))bad.push(ia);
+    if(!(Math.abs(lng)<=180))bad.push(io);
+    if(bad.length){
+      bad.forEach(function(i){i.classList.add("err");setTimeout(function(){i.classList.remove("err")},1500)});
+      return;
+    }
+    searchLayer.clearLayers();
+    var pt=L.latLng(lat,lng);
+    L.marker(pt).addTo(searchLayer);
+    focusAt(pt,17);
+  }
+  /* ซูมไปที่จุด และถ้าจุดอยู่ในพื้นที่ของ feature ใดให้เปิด popup ของ feature นั้น */
+  function focusAt(pt,zoom){
+    map.setView(pt,Math.max(map.getZoom(),zoom));
+    var hit=null;
+    LAYERS.forEach(function(c){
+      if(hit||!c.loaded||!map.hasLayer(c.layer))return;
+      c.layer.eachLayer(function(l){if(!hit&&layerHas(l,pt.lat,pt.lng))hit=l});
+    });
+    if(hit)hit.openPopup(pt);
+  }
+
+  /* ---------- ตำแหน่งปัจจุบันแบบติดตามต่อเนื่อง (GPS Tracking) ---------- */
+  var locLayer;
+  var gpsWatchId = null;
+  var gpsFollowing = false;
+  function addLocate(){
+    locLayer=L.layerGroup().addTo(map);
+    var C=L.Control.extend({options:{position:"topleft"},onAdd:function(){
+      var d=L.DomUtil.create("div","leaflet-bar leaflet-control"),
+          a=L.DomUtil.create("a","mm-loc",d);
+      a.href="#";
+      a.setAttribute("role","button");
+      a.title="เริ่มติดตามตำแหน่งปัจจุบัน";
+      a.setAttribute("aria-label","เริ่มติดตามตำแหน่งปัจจุบัน");
+      a.textContent="📍";
+
+      function stopTracking(){
+        if(gpsWatchId!==null){
+          navigator.geolocation.clearWatch(gpsWatchId);
+          gpsWatchId=null;
+        }
+        gpsFollowing=false;
+        delete a.dataset.gpsStarted;
+        a.classList.remove("busy","tracking");
+        a.title="เริ่มติดตามตำแหน่งปัจจุบัน";
+        a.setAttribute("aria-label","เริ่มติดตามตำแหน่งปัจจุบัน");
+      }
+
+      a.onclick=function(e){
+        e.preventDefault();
+        if(gpsWatchId!==null){
+          stopTracking();
+          return;
+        }
+        if(!navigator.geolocation){
+          alert("เบราว์เซอร์นี้ไม่รองรับการระบุตำแหน่ง");
+          return;
+        }
+
+        gpsFollowing=true;
+        a.classList.add("busy","tracking");
+        a.title="กำลังติดตามตำแหน่ง — กดเพื่อหยุด";
+        a.setAttribute("aria-label","กำลังติดตามตำแหน่ง กดเพื่อหยุด");
+
+        gpsWatchId=navigator.geolocation.watchPosition(function(pos){
+          a.classList.remove("busy");
+          var pt=L.latLng(pos.coords.latitude,pos.coords.longitude);
+          var acc=pos.coords.accuracy||0;
+          locLayer.clearLayers();
+          if(acc>0){
+            L.circle(pt,{
+              radius:acc,
+              color:"#2563eb",
+              weight:1,
+              fillColor:"#2563eb",
+              fillOpacity:.12,
+              interactive:false
+            }).addTo(locLayer);
+          }
+          L.circleMarker(pt,{
+            radius:8,
+            color:"#fff",
+            weight:3,
+            fillColor:"#2563eb",
+            fillOpacity:1
+          }).addTo(locLayer);
+
+          // ครั้งแรกซูมเข้าไปยังตำแหน่งปัจจุบัน จากนั้นเลื่อนแผนที่ตาม GPS
+          if(gpsFollowing){
+            if(!a.dataset.gpsStarted){
+              map.setView(pt,Math.max(map.getZoom(),18));
+              a.dataset.gpsStarted="1";
+            }else{
+              map.panTo(pt,{animate:true,duration:.5});
+            }
+          }
+        },function(err){
+          stopTracking();
+          delete a.dataset.gpsStarted;
+          alert("ติดตามตำแหน่งปัจจุบันไม่ได้: "+(
+            err.code===1?"ไม่ได้รับอนุญาตให้เข้าถึงตำแหน่ง":
+            err.code===2?"ไม่พบตำแหน่ง GPS":
+            err.code===3?"หมดเวลารอ GPS":err.message||"ไม่ทราบสาเหตุ"
+          ));
+        },{
+          enableHighAccuracy:true,
+          timeout:20000,
+          maximumAge:1000
+        });
+      };
+      L.DomEvent.disableClickPropagation(d);
+      return d;
+    }});
+    new C().addTo(map);
+  }
+  function addSearch(){
+    searchLayer=L.layerGroup().addTo(map);
+    var C=L.Control.extend({options:{position:"topleft"},onAdd:function(){
+      var d=L.DomUtil.create("div","mm-search leaflet-bar");
+      d.innerHTML='<button type="button" class="tg" title="ย่อเครื่องมือค้นหา">ย่อ</button>'+
+        '<div class="bd"><div class="ins"><input type="text" inputmode="decimal" class="la" placeholder="lat" aria-label="Latitude">'+
+        '<input type="text" inputmode="decimal" class="lo" placeholder="long" aria-label="Longitude">'+
+        '<input type="text" class="ll" placeholder="lat, long เช่น 14.59, 101.01" aria-label="lat, long"></div>'+
+        '<div class="btns"><button type="button" class="go" title="ค้นหา">🔍</button>'+
+        '<button type="button" class="sw" title="สลับ: แยก lat/long 2 ช่อง ↔ ช่องเดียว">⇄</button>'+
+        '<button type="button" class="clr" title="ล้างผลการค้นหา">💫ล้างผลค้นหา</button></div></div>';
+      var ia=d.querySelector(".la"),io=d.querySelector(".lo"),il=d.querySelector(".ll");
+      var tg=d.querySelector(".tg");
+      tg.onclick=function(){   // ขยายอยู่: แสดง ◀ (กดเพื่อย่อ) · ย่ออยู่: แสดง 📍 (กดเพื่อขยาย)
+        var c=d.classList.toggle("col");
+        tg.textContent=c?"🌐":"ย่อ";
+        tg.title=c?"ขยายเครื่องมือค้นหา":"ย่อเครื่องมือค้นหา";
+      };
+      function run(){
+        if(d.classList.contains("one")){
+          var p=parsePair(il.value);
+          if(!p){il.classList.add("err");setTimeout(function(){il.classList.remove("err")},1500);return;}
+          doSearch(p[0],p[1],il,il);
+        }else doSearch(num(ia),num(io),ia,io);
+      }
+      d.querySelector(".go").onclick=run;
+      d.querySelector(".sw").onclick=function(){   // สลับโหมด พร้อมแปลงค่าที่กรอกไว้
+        if(d.classList.contains("one")){
+          var p=parsePair(il.value);if(p){ia.value=p[0];io.value=p[1];}
+          d.classList.remove("one");
+        }else{
+          if(ia.value||io.value)il.value=ia.value.trim()+", "+io.value.trim();
+          d.classList.add("one");
+        }
+      };
+      d.querySelector(".clr").onclick=function(){ia.value="";io.value="";il.value="";searchLayer.clearLayers();if(locLayer)locLayer.clearLayers();map.closePopup();};
+      [ia,io,il].forEach(function(i){i.onkeydown=function(e){if(e.key==="Enter")run()}});
+      L.DomEvent.disableClickPropagation(d);L.DomEvent.disableScrollPropagation(d);
+      return d;
+    }});
+    new C().addTo(map);
+  }
+
+  /* ---------- สร้าง popup + แผนที่ ---------- */
+
+function build(){
+    back=document.createElement("div");
+    back.className="mm-back hide";
+
+    back.innerHTML=
+        '<div class="mm-box">'+
+        '<div class="mm-map"></div>'+
+        '<p class="mm-warn"><b><i>* <u>อยู่ระหว่างศึกษา</u> รายละเอียดตามข้อกำหนดฉบับปิดประกาศ 15 วัน (28 พ.ย. – 12 ต.ค. 69)</i></b></p>'+
+        '</div>';
+
+    document.body.appendChild(back);
+
+    box=back.firstChild;
+
+    if(START_FULL){
+    back.classList.add("full");
+    }
+
+    // คลิกพื้นที่ด้านนอกเพื่อปิดแผนที่
+    back.addEventListener("mousedown",function(e){
+        if(e.target===back)close();
+    });
+
+    // ไม่ผูกปุ่ม ESC กับการปิดแผนที่ เพื่อป้องกันการกดพลาด
+    var mapElement = box.querySelector(".mm-map");
+      map = L.map(mapElement, {
+          zoomControl: false,
+          maxZoom: 22,
+          dragging: true,
+          touchZoom: true,
+          tap: true,
+          doubleClickZoom: true
+      }).setView([14.59, 101.0], 11);
+
+      // กำหนดให้พื้นที่แผนที่รับ Touch โดยตรง
+      mapElement.style.touchAction = "none";
+      mapElement.style.webkitUserSelect = "none";
+
+      // เปิดการลากแผนที่
+      map.dragging.enable();
+      map.touchZoom.enable();
+        const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        minZoom: 2,
+        maxNativeZoom: 19,
+        maxZoom: 22,
+        attribution: '&copy; OpenStreetMap contributors'
+      });
+    var sat=L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",{maxZoom:22,attribution:"Esri"});
+    map.layerCtl=L.control.layers(
+    {"แผนที่":osm,"ดาวเทียม":sat},{}
+        ).addTo(map);
+
+        osm.addTo(map);
+    LAYERS.forEach(function(c){   // ทุกชั้นอยู่ในรายการเลือก; ชั้นที่ on:true เปิดไว้แต่แรก
+      makeLayer(c);
+      map.layerCtl.addOverlay(c.layer,c.name);
+      if(c.on)c.layer.addTo(map);
+    });
+    map.on("overlayremove",updLegend);
+    map.on("overlayadd",function(e){
+      updLegend();   // ติ๊กเลือกชั้นไหน ค่อยโหลดไฟล์ของชั้นนั้น
+      LAYERS.forEach(function(c){if(c.layer===e.layer){if(c.loaded){if(c.isPoint)c.layer.bringToFront();fit(c);}else ensureLoaded(c);}});   // เปิดชั้นไหนซูมไปที่ชั้นนั้น (ชั้นที่ยังไม่โหลด จะซูมให้เมื่อโหลดเสร็จ)
+    });
+    addSearch();                       // เพิ่มก่อน zoom control เพื่อให้อยู่ด้านบน
+    L.control.zoom({position:"topleft"}).addTo(map);
+    addLocate();                       // เพิ่มหลัง zoom control เพื่อให้อยู่ใต้ปุ่มซูมออก
+    map.on("zoomend",updLabels);updLabels();
+    built=true;
+  }
+
+  function close(){if(back)back.classList.add("hide");}
+
+  function open() {
+    Promise.resolve(window.FIELD_CONFIG_READY)
+      .then(function() {
+        var p = (window.L && window.shp) ? Promise.resolve() :
+          (loadCss(LEAFLET + "leaflet.css"),
+          Promise.all([
+            loadJs(LEAFLET + "leaflet.js"),
+            loadJs(SHPJS)
+          ]));
+
+        return p;
+      })
+      .then(function() {
+        if (!built) build();
+
+      back.classList.remove("hide");
+
+      setTimeout(function() {
+          map.invalidateSize(true);
+
+          // เปิดระบบสัมผัสอีกครั้งหลังแสดงแผนที่
+          map.dragging.enable();
+          map.touchZoom.enable();
+
+          fit();
+      }, 300);
+
+        LAYERS.forEach(function(c) {
+          if (map.hasLayer(c.layer)) ensureLoaded(c);
+        });
+      })
+      .catch(function(e) {
+        alert("โหลดข้อมูลไม่สำเร็จ\n" + e.message);
+      });
+  }
+
+  $("mapBtn").onclick=open;
+  if(AUTO_OPEN)open();
+})();
+function getHttpsCompatibleUrl(httpUrl) {
+  if (!httpUrl) return '';
+  
+  // หาก URL เป็น https:// อยู่แล้ว ให้คืนค่าเดิม
+  if (httpUrl.startsWith('https://')) {
+    return httpUrl;
+  }
+  
+  // ใช้ CORS Proxy เพื่อแปลง HTTP เป็น HTTPS
+  const proxyPrefix = 'https://corsproxy.io/?';
+  return proxyPrefix + encodeURIComponent(httpUrl);
+}
+</script>
+</body>
+</html>
